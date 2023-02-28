@@ -5,9 +5,6 @@
 //mandelbrot set
 #define MAX_ITERATIONS 10000
 
-//threads
-#define MAX_THREADS 10
-
 /*
  * m_point
  * 
@@ -65,20 +62,6 @@ void free_set_data(set_data * set);
 void escape_data(double, double, int, m_point*);
 
 
-/*
- * render_mandelbrot_bmp
- * 
- * @param bmp_image *image
- * @param double center_x
- * @param double center_y
- * @param double width
- * @param int max_iterations
- * 
- * Render a bmp_image representing points in/adjecent to the mandelbrot set.
- */
-void render_mandelbrot_bmp(bmp_image * image, double center_x, double center_y, 
-                        double plot_width, int color_offset, int max_iterations);
-
 
 /*
  * mandelbrot_set_data
@@ -95,6 +78,7 @@ void render_mandelbrot_bmp(bmp_image * image, double center_x, double center_y,
 void mandelbrot_set_data(set_data *set, double center_x, double center_y, 
                         double width, int max_iterations);
 
+
 /*
  * mandelbrot_set_data_threaded
  * 
@@ -108,41 +92,10 @@ void mandelbrot_set_data(set_data *set, double center_x, double center_y,
  * mandelbrot set, store data in the set_data parameter.  Use a thread
  * to handle rows using MAX_THREADS threads.
  */
-void mandelbrot_set_data_threaded(set_data *set, double center_x, 
-                                double center_y, double width, 
-                                int max_iterations);
 
-/*
- * mandelbrot_set_data_thread
- * 
- * @param m_point *row
- * @param int row_width
- * @param double start_x
- * @param double y
- * @double step
- * @param pthread_mutex_t *thread_count
- * 
- * Compute results mandelbrot set result for single row.
- * Compute row_width points which are step appart and paired with 
- * the coordinate y.  decrements thread cound when complete.
- */
 
-void mandelbrot_set_data_thread(m_point *row, int row_width, 
-                                double start_x, double y, 
-                                double step, int max_iterations,
-                                pthread_mutex_t* thread_count);
-/* 
- * color_scale_a
- * 
- * @param double nu
- * @param int oufset
- * @param rgb_pixel *pixel
- * 
- * Using mandelbrot set data set rgb_pixel r, g, p members. 
- * Color is computed by adjusting the hue from 0 to 1535, using
- * maximum saturation.
- */ 
 void color_scale_a(double nu, int offset, rgb_pixel * pixel);
+
 
 
 /*
@@ -157,7 +110,6 @@ void color_scale_a(double nu, int offset, rgb_pixel * pixel);
  * each point set and saves the result in the corresponding
  * pixel in image.  image and set must have the same resolion. 
  */
-
 void set_data_to_bmp(set_data *set, bmp_image *image,
                      void(*set_color)(m_point*, rgb_pixel*));
 

@@ -8,16 +8,18 @@
 #include "color.h"
 
 
-/* int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     bmp_image *img;
-    uint32_t img_width, img_height;
-    double x, y, plot_width;
-    int opt, output_hue_scan, hue_end, max_iterations;
+    set_data *sd;
+	uint32_t img_width = 0, img_height = 0;
+    double x = -100, y = -100, plot_width = 0;
+    int opt = 0, output_hue_scan = 0, hue_end = 0, 
+		max_iterations = 0;
     char file_name [200];
     char file_path_post [300];
-    
 
+		
     //Command line args
     max_iterations = MAX_ITERATIONS;
     output_hue_scan = 0;
@@ -59,9 +61,23 @@
             break;
         }
     } 
+	
 
+	// Check the required arguments if any are 0, run default
+
+	if ( img_width == 0 || img_height == 0 || x == -100 || y == -100 ||
+		 plot_width == 0 ) {
+		img_width = 600;
+		img_height = 400;
+		x = -2;
+		y = 0;
+		plot_width = 4;
+		printf("Invalid or missing parameters, printing default...\n");
+	}
+		 
     img = (bmp_image*) malloc(sizeof(bmp_image));
-
+    sd = (set_data*) malloc(sizeof(set_data));
+    malloc_set_data(sd, img_width, img_height);
     bmp_image_malloc(img, img_width, img_height);
 
     if (output_hue_scan)
@@ -69,48 +85,19 @@
     else
         hue_end = 10;
     
-    for (int i = 0; i < hue_end; i+=10){
-        render_mandelbrot_bmp(img, x, y, plot_width, i, max_iterations);
-        sprintf(file_path_post, "pics/%s_%d.bmp", file_name, i);
-        fwrite_bmp_image(img, file_path_post);
-    }
 
+    for (int i = 0; i < hue_end; i+=10){
+        mandelbrot_set_data(sd, x, y, plot_width, max_iterations);
+        sprintf(file_path_post, "pics/%s_%d.bmp", file_name, i);
+            
+        set_data_to_bmp(sd, img, generate_color_hsv_hue_z_based);
+        fwrite_bmp_image(img, file_path_post); 
+    }        
     bmp_image_free(img);
     free(img);
-
+    free_set_data(sd);
+    free(sd);
     
     return 0;
 }
- */
 
-int main(int argc, char *argv[])
-{
-    /* code */
-    int res_width, res_height;
-    char buffer[200];
-    double plot_width;
-
-    set_data set;
-    bmp_image image;
-
-    res_width = 600;
-    res_height = 400;
-
-    
-    malloc_set_data(&set, res_width, res_height);
-    bmp_image_malloc(&image, res_width, res_height);
-    plot_width = 4;
-    for (int i = 1; i < 300; i++){
-        mandelbrot_set_data(&set, -0.1992599180602, 1.10009614189035, plot_width, 8000);
-        set_data_to_bmp(&set, &image, generate_color_hsv_hue_it_based);
-        //set_data_to_bmp(&set, &image, generate_color_hsv_hue_z_based);
-        sprintf(buffer, "pics/zoom/1/img_%04d.bmp", i);
-        fwrite_bmp_image(&image, buffer);
-        plot_width *= 0.95;
-    }
-
-    free_set_data(&set);
-    bmp_image_free(&image);
-
-    return 0;
-}

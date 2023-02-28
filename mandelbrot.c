@@ -58,75 +58,6 @@ void escape_data(double x_0,
 }
 
 
-//draw mandelbrot bmp
-//image must be inititalized...
-void render_mandelbrot_bmp(bmp_image * image, 
-                    double center_x,
-                    double center_y,
-                    double width,
-                    int color_offset,
-                    int max_iterations)
-{
-    double x_0, y_0, step, upper, left, logz, nu, max_nu;
-    double ** nu_array;
-    int x, y;
-    m_point point_data;
-
-    //allocate space to store nu values
-    nu_array = (double**) malloc(sizeof(double*) * image->header.height);
-    for (y = 0; y < image->header.height; y++)
-    {
-        nu_array[y] = (double *) malloc(sizeof(double) * image->header.width);
-    }
-    //calculate the distance between pixels and the left and lower bounds
-    step = width / (double)image->header.width;
-    left = center_x - step * image->header.width / 2;
-    upper = center_y + step * image->header.height / 2;
-    
-    //populate nu_array with nu values based on z
-    for (x = 0; x < image->header.width; x++)
-    {
-        for ( y = 0; y < image->header.height; y++)
-        {
-            y_0 = upper - step * y;
-            x_0 = left + step * x;
-            
-            escape_data(x_0, y_0, max_iterations, &point_data);
-            
-            logz = log(point_data.z) / 2;
-            nu = log(logz / log(2)) / log(2);
-            
-            nu_array[y][x] = nu;
-            if (nu > max_nu)
-            {
-                max_nu = nu;
-            }
-        }
-    }
-
-    for (x = 0; x < image->header.width; x++)
-    {
-        for ( y = 0; y < image->header.height; y++)
-        {
-            if (!isnan(nu_array[y][x]))
-            {
-                color_scale_a(nu_array[y][x] / max_nu, color_offset, &image->data[y][x]);
-            }
-            else
-            {
-                image->data[y][x] = init_pixel(0,0,0);
-            }
-        }
-    }
-
-    //free nu_array
-    for (y = 0; y < image->header.height; y++)
-    {
-        free(nu_array[y]);
-    }
-    free(nu_array);
-
-}
 
 
 void mandelbrot_set_data(set_data *set, 
@@ -159,42 +90,26 @@ void mandelbrot_set_data(set_data *set,
     }
 }
 
-void mandelbrot_set_data_threaded(set_data *set, double center_x, 
-                                double center_y, double width, 
-                                int max_iterations)
+
+//Write the set data to a bmp struct
+void set_data_to_bmp(set_data *set, bmp_image *image,
+                     void(*set_color)(m_point*, rgb_pixel*))
 {
-    double x_0, y_0, step, upper, left;
-    int y;
-    pthread_mutex_t thread_count;
-
-    //set number of threads to 0
-
-    //while y < set->height if the number of threads is less than
-    //max_threads add start a new thread
-    
-}
-
-//processing for one thread
-void mandelbrot_set_data_thread(m_point *row, int row_width, 
-                                double start_x, double y, 
-                                double step, int max_iterations,
-                                pthread_mutex_t* thread_count)
-{
-    int x;
+    int x, y;
     m_point point;
+    rgb_pixel pixel;
 
-    for (x = 0; x < row_width; x++)
+
+    for (x = 0; x < set->width; x++)
     {
-        escape_data(start_x + step * x, y, max_iterations, &point);
-        row[x] = point;
+        for (y = 0; y < set->height; y++)
+        {
+            point.iterations = set->data[y][x].iterations;
+            point.z = set->data[y][x].z;
+            set_color(&point, &pixel);
+            image->data[y][x] = pixel;
+        }
     }
-    //unlock thread count, decrement and relock
-    pthread_mutex_unlock(thread_count);
-    *thread_count--;
-    pthread_mutex_lock(thread_count);
-
-    //close the thread
-    pthread_exit(NULL);
 }
 
 //smooth color gradient with saturated colors
@@ -249,27 +164,6 @@ void color_scale_a(double nu, int offset, rgb_pixel * pixel)
     *pixel = init_pixel(r ,g, b);
 } 
 
-//todo
-//implement set_data_to_bmp
-void set_data_to_bmp(set_data *set, bmp_image *image,
-                     void(*set_color)(m_point*, rgb_pixel*))
-{
-    int x, y;
-    m_point point;
-    rgb_pixel pixel;
-
-
-    for (x = 0; x < set->width; x++)
-    {
-        for (y = 0; y < set->height; y++)
-        {
-            point.iterations = set->data[y][x].iterations;
-            point.z = set->data[y][x].z;
-            set_color(&point, &pixel);
-            image->data[y][x] = pixel;
-        }
-    }
-}
 
 /*
  * --------------------------------------
