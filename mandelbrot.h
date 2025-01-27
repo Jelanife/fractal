@@ -4,6 +4,8 @@
 
 //mandelbrot set
 #define MAX_ITERATIONS 10000
+#define MAX_THREADS 8
+
 
 /*
  * m_point
