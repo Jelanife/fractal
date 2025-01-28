@@ -3,6 +3,7 @@
 #include "libbmp.h"
 #include "mandelbrot.h"
 #include "color.h"
+#include <pthread.h>
 
 void malloc_set_data(set_data *set, int width, int height)
 {
@@ -58,6 +59,31 @@ void escape_data(double x_0,
 }
 
 
+void escape_data_threaded(worker_data * data)
+{
+    int iterations;
+    double x, y, z, x_temp;
+    //init the worker_data
+    iterations = 0;
+    x = 0.0;
+    y = 0.0;
+
+    do 
+    {
+        x_temp = x*x - y*y + data->x_0;
+        y = 2*x*y+data->y_0;
+        x = x_temp;
+        z = x*x + y*y;
+        iterations++;
+    }
+    while(z <= 2*2 && iterations < data->max_iterations);
+
+    data->point_data.iterations = iterations;
+    data->point_data.z = z;
+	pthread_exit(NULL);
+}
+
+
 
 
 void mandelbrot_set_data(set_data *set, 
@@ -90,6 +116,76 @@ void mandelbrot_set_data(set_data *set,
     }
 }
 
+void mandelbrot_set_data_threaded(set_data *set, 
+                    double center_x, 
+                    double center_y, 
+                    double plot_width, 
+                    int max_iterations)
+{
+    double step, upper, left;
+    int x, y, i, n_threads;
+	worker_data *worker_data_pool;
+	pthread_t *thread_pool;
+	pthread_attr_t attr;
+
+	//allocate worker data pool MAX_THREADS	
+	worker_data_pool = (worker_data*) malloc(sizeof(worker_data) * MAX_THREADS);
+	thread_pool = (pthread_t*) malloc(sizeof(pthread_t) * MAX_THREADS);
+
+    //calculate the distance between pixels and the left and lower bounds
+    step = plot_width / (double)set->width;
+    left = center_x - step * set->width / 2;
+    upper = center_y + step * set->height / 2;
+    
+    //populate set with z and iteration count
+    for (x = 0; x < set->width; x++)
+    { 
+        y = 0;
+        while (y < set->height)
+        {
+            //y_0 = upper - step * y;
+            //x_0 = left + step * x;
+           
+		    //j = y;
+			
+			//Compute the number of threads for this iteration
+			if (y + MAX_THREADS >= set->height) 
+            {
+				n_threads = set->height - y;
+			} else {
+				n_threads = MAX_THREADS;
+			}
+			
+			//Setup thread attributes
+			pthread_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+			//Create point pool for the threads and start threads
+			for (i = 0; i < n_threads; i++)
+            {
+				worker_data_pool[i].y_0 = upper - step * (y + i);
+				worker_data_pool[i].x_0 = left + step * (x);
+				worker_data_pool[i].max_iterations = max_iterations;
+				pthread_create(&thread_pool[i], 
+				 			   &attr, 
+				               (void *) escape_data_threaded,
+							   &worker_data_pool[i]);
+			}
+			
+			//Join the threads record the calculatated data
+			for (i = 0; i < n_threads; i++)
+            {
+				pthread_join(thread_pool[i], NULL);
+				set->data[y+i][x] = worker_data_pool[i].point_data;
+
+			}
+			pthread_attr_destroy(&attr); 
+           	y += n_threads; 
+        }
+	//Free allocated memory
+    }
+    free(worker_data_pool);
+	free(thread_pool);
+}
 
 //Write the set data to a bmp struct
 void set_data_to_bmp(set_data *set, bmp_image *image,

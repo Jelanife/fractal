@@ -4,7 +4,9 @@
 
 //mandelbrot set
 #define MAX_ITERATIONS 10000
-#define MAX_THREADS 8
+
+//Threadding
+#define MAX_THREADS 1
 
 
 /*
@@ -29,6 +31,19 @@ typedef struct _set_data
     int height;
     m_point ** data;
 } set_data;
+
+
+/* 
+* worker_data
+* 
+* Contains the parameters required by the escape_data_threaded function.
+*/
+typedef struct worker_data {
+	double x_0;
+	double y_0;
+	int max_iterations;
+	m_point point_data;
+}	worker_data;
 
 /*
  * malloc_set_data
@@ -64,6 +79,18 @@ void free_set_data(set_data * set);
 void escape_data(double, double, int, m_point*);
 
 
+/*
+ * escape_iterations
+ *
+ * @param workder_data * data
+ * 
+ * This function determines whether or not point (x_0, y_0) is in the 
+ * mandelbrot set.  Iteration caps to max_iterations if z remains
+ * bounded.  When computation is complete, max_iterations or bailout, 
+ * z and the number iterations are written to &data.
+ */
+void escape_data_threaded(worker_data * data);
+
 
 /*
  * mandelbrot_set_data
@@ -94,6 +121,8 @@ void mandelbrot_set_data(set_data *set, double center_x, double center_y,
  * mandelbrot set, store data in the set_data parameter.  Use a thread
  * to handle rows using MAX_THREADS threads.
  */
+void mandelbrot_set_data_threaded(set_data *set, double center_x, double center_y, 
+                        double width, int max_iterations);
 
 
 void color_scale_a(double nu, int offset, rgb_pixel * pixel);
