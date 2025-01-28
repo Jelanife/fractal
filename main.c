@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     
 
     for (int i = 0; i < hue_end; i+=10){
-        mandelbrot_set_data(sd, x, y, plot_width, max_iterations);
+        mandelbrot_set_data_threaded(sd, x, y, plot_width, max_iterations);
         sprintf(file_path_post, "pics/%s_%d.bmp", file_name, i);
             
         set_data_to_bmp(sd, img, generate_color_hsv_hue_z_based);
